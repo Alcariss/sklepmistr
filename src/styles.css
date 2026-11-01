@@ -1,0 +1,468 @@
+:root {
+  --pk-accent: #9a3412;
+  --accent: #9a3412;
+  --accent-soft: #fde7d3;
+  --bg: #faf6f0;
+  --surface: #ffffff;
+  --text: #2b2118;
+  --muted: #7a6a5c;
+  --line: #eadfd2;
+  --good: #15803d;
+  --warn: #c2410c;
+  --bad: #b91c1c;
+  color-scheme: light;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+}
+
+button.secondary {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+button.ghost {
+  padding: 0.4rem 0.6rem;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+button.danger {
+  background: transparent;
+  color: var(--bad);
+  border: 1px solid currentColor;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: inherit;
+}
+
+input[type='date'] {
+  /* iOS widens date inputs past their container without this. */
+  appearance: none;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: max(0.75rem, env(safe-area-inset-top)) 1rem 0.75rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.sync {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.container {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 1rem 1rem calc(5.5rem + env(safe-area-inset-bottom));
+}
+
+#debug {
+  padding-top: 0;
+}
+
+h2 {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.lead {
+  margin-top: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+.card {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.card h2:first-child {
+  margin-top: 0;
+}
+
+/* Overview: the bar and left border take the tone colour; the text stays readable. */
+.covers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.75rem;
+}
+
+.cover {
+  padding: 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 5px solid currentColor;
+  border-radius: 12px;
+  color: var(--muted);
+}
+
+.cover header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cover h3 {
+  flex: 1;
+  margin: 0;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.cover-days {
+  font-size: 1.15rem;
+}
+
+.cover-detail {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.bar {
+  height: 6px;
+  margin-top: 0.6rem;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  background: currentColor;
+}
+
+.tone-good { color: var(--good); }
+.tone-warn { color: var(--warn); }
+.tone-bad { color: var(--bad); }
+
+/* Stock */
+.toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.toolbar input {
+  flex: 2;
+}
+
+.toolbar select {
+  flex: 1;
+}
+
+.location h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.count {
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8rem;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.item-icon {
+  font-size: 1.4rem;
+}
+
+.item-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.item-meta,
+.expiry {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.item-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.status-expired { border-color: var(--bad); }
+.status-expired .expiry { color: var(--bad); font-weight: 600; }
+.status-soon { border-color: var(--warn); }
+.status-soon .expiry { color: var(--warn); font-weight: 600; }
+.item.empty { opacity: 0.6; }
+
+/* Shopping */
+.needs,
+.checklist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.needs li,
+.checklist li {
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.checklist li.have {
+  color: var(--muted);
+}
+
+/* Forms */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.75rem;
+}
+
+.field > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.field small {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.helper {
+  margin: -0.25rem 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+.helper summary {
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.helper .row {
+  margin-top: 0.5rem;
+}
+
+.error {
+  color: var(--bad);
+}
+
+.assumptions {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.assumptions th,
+.assumptions td {
+  padding: 0.35rem 0.25rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.account p {
+  margin-top: 0;
+}
+
+/* Dialog */
+dialog {
+  width: min(32rem, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 1rem;
+  border: 0;
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+dialog::backdrop {
+  background: rgb(43 33 24 / 50%);
+}
+
+dialog h2 {
+  margin-top: 0;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* Bottom navigation */
+.tabs {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.tab {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.55rem 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tab span:first-child {
+  font-size: 1.25rem;
+}
+
+.tab[aria-current='page'] {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.toast {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  left: 1rem;
+  z-index: 20;
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  background: var(--text);
+  color: #ffffff;
+  text-align: center;
+}
+
+.toast[data-tone='error'] {
+  background: var(--bad);
+}
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  body > #app > :not(.print-only),
+  .pk-update-banner {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+    font-size: 11pt;
+  }
+
+  .print-only table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .print-only th,
+  .print-only td {
+    padding: 4pt;
+    border-bottom: 1px solid #999999;
+    text-align: left;
+  }
+}
