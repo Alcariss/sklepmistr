@@ -12,7 +12,9 @@
     "icons": "pwa-assets-generator"
   },
   "dependencies": {
-    "@alcariss/pwa-kit": "github:Alcariss/pwa-kit#semver:^1.0.0"
+    "@alcariss/pwa-kit": "github:Alcariss/pwa-kit#semver:^1.0.0",
+    "barcode-detector": "^3.2.3",
+    "zxing-wasm": "^3.1.6"
   },
   "devDependencies": {
     "@vite-pwa/assets-generator": "^1.0.4",

@@ -24,6 +24,7 @@ function item(overrides: Partial<Item>): Item {
     dailyUse: null,
     expiry: '',
     note: '',
+    barcode: '',
     ...overrides
   };
 }

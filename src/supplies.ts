@@ -37,6 +37,8 @@ export type Item = {
   dailyUse: number | null;
   expiry: string;
   note: string;
+  /** EAN/UPC code, '' when the item was entered by hand. */
+  barcode: string;
 };
 
 export type Household = {

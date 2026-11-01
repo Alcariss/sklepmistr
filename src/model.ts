@@ -43,7 +43,8 @@ export function toItem(row: unknown): Item {
     packageSize: numberOrNull(record, 'packageSize'),
     dailyUse: numberOrNull(record, 'dailyUse'),
     expiry: text(record, 'expiry'),
-    note: text(record, 'note')
+    note: text(record, 'note'),
+    barcode: text(record, 'barcode')
   };
 }
 
@@ -57,7 +58,8 @@ export function toItemParams(input: ItemInput): RequestParams {
     packageSize: input.packageSize ?? '',
     dailyUse: input.dailyUse ?? '',
     expiry: input.expiry,
-    note: input.note.trim()
+    note: input.note.trim(),
+    barcode: input.barcode
   };
 }
 

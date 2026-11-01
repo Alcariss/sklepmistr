@@ -159,8 +159,9 @@ export function renderStockShell(): string {
       </select>
     </div>
     <div class="toolbar">
-      <button type="button" data-action="add-item">+ Přidat zásobu</button>
-      <button type="button" class="secondary" data-action="print">🖨️ Vytisknout</button>
+      <button type="button" data-action="add-item">+ Přidat</button>
+      <button type="button" data-action="scan">📷 Skenovat</button>
+      <button type="button" class="secondary" data-action="print" aria-label="Vytisknout">🖨️</button>
     </div>
     <div id="stock-list"></div>`;
 }
@@ -257,14 +258,23 @@ export function renderHousehold(household: Household, version: string, email: st
     </section>`;
 }
 
-export function renderItemForm(item: Item | null, locations: string[]): string {
-  const value = (key: keyof Item) => escapeHtml(item?.[key] ?? '');
-  const selected = item?.category ?? 'food';
+/** A new item pre-filled from a scan or copied from another batch. */
+export type ItemDraft = Partial<Omit<Item, 'id'>>;
+
+export function renderItemForm(item: Item | null, locations: string[], draft: ItemDraft = {}): string {
+  const source: ItemDraft = item ?? draft;
+  const value = (key: keyof ItemDraft) => escapeHtml(source[key] ?? '');
+  const selected = source.category ?? 'food';
   return `
     <form id="item-form" method="dialog">
       <h2>${item ? 'Upravit zásobu' : 'Nová zásoba'}</h2>
       <label class="field"><span>Název</span>
-        <input name="name" required maxlength="200" value="${value('name')}" placeholder="např. Fazole v plechovce" autocomplete="off" /></label>
+        <span class="row">
+          <input name="name" required maxlength="200" value="${value('name')}" placeholder="např. Fazole v plechovce" autocomplete="off" />
+          <button type="button" class="secondary" data-action="scan-into-form" aria-label="Naskenovat čárový kód">📷</button>
+        </span></label>
+      <input type="hidden" name="barcode" value="${value('barcode')}" />
+      <p id="barcode-line" class="muted small" ${source.barcode ? '' : 'hidden'}>Čárový kód ${value('barcode')}</p>
       <label class="field"><span>Kategorie</span>
         <select name="category" id="item-category">
           ${CATEGORIES.map((category) => `<option value="${category}" ${category === selected ? 'selected' : ''}>${CATEGORY_ICONS[category]} ${CATEGORY_LABELS[category]}</option>`).join('')}
@@ -322,4 +332,29 @@ export function renderPrintSheet(items: Item[], household: Household, today: str
         <tr><td>${escapeHtml(item.location || NO_LOCATION)}</td><td>${escapeHtml(item.name)}</td>
         <td>${quantityText(item)}</td><td>${formatDate(item.expiry)}</td></tr>`).join('')}</tbody>
     </table>`;
+}
+
+/** Shown after scanning a code that is already in stock. */
+export function renderBarcodeMatch(code: string, matches: Item[], today: string): string {
+  return `
+    <h2>Tohle už máte</h2>
+    <p class="muted small">Čárový kód ${escapeHtml(code)}</p>
+    <ul class="items">${matches.map((item) => `
+      <li class="item">
+        <span class="item-icon" aria-hidden="true">${CATEGORY_ICONS[item.category]}</span>
+        <div class="item-body">
+          <strong>${escapeHtml(item.name)}</strong>
+          <span class="item-meta">${item.quantity <= 0 ? 'došlo' : quantityText(item)}${item.location ? ` · ${escapeHtml(item.location)}` : ''}</span>
+          ${item.expiry ? `<span class="expiry">do ${formatDate(item.expiry)}${expiryStatus(item.expiry, today) === 'expired' ? ' · prošlé' : ''}</span>` : ''}
+        </div>
+        <div class="item-actions">
+          <button type="button" data-match="plus-one" data-id="${escapeHtml(item.id)}" aria-label="Přidat 1 ks k ${escapeHtml(item.name)}">+1</button>
+        </div>
+      </li>`).join('')}</ul>
+    <p class="muted small">Stejné zboží s jiným datem spotřeby přidejte jako novou šarži.</p>
+    <div class="dialog-actions">
+      <button type="button" class="secondary" data-match="close">Zavřít</button>
+      <span class="spacer"></span>
+      <button type="button" data-match="new-batch" data-id="${escapeHtml(matches[0]?.id ?? '')}">Nová šarže</button>
+    </div>`;
 }

@@ -5,12 +5,12 @@ describe('toItem', () => {
   it('reads a row from the worker', () => {
     const row = {
       id: '4', name: 'Voda Bonaqua', category: 'water', location: 'Sklep', quantity: 6,
-      packageSize: 1.5, dailyUse: null, expiry: '2027-05-01', note: '', createdAt: 'c', updatedAt: 'u'
+      packageSize: 1.5, dailyUse: null, expiry: '2027-05-01', note: '', barcode: '8594001021505', createdAt: 'c', updatedAt: 'u'
     };
 
     expect(toItem(row)).toEqual({
       id: '4', name: 'Voda Bonaqua', category: 'water', location: 'Sklep', quantity: 6,
-      packageSize: 1.5, dailyUse: null, expiry: '2027-05-01', note: ''
+      packageSize: 1.5, dailyUse: null, expiry: '2027-05-01', note: '', barcode: '8594001021505'
     });
   });
 
@@ -27,7 +27,7 @@ describe('toItemParams', () => {
   it('sends empty optional numbers as blanks so an edit clears them', () => {
     const params = toItemParams({
       name: ' Svíčky ', category: 'energy', location: '', quantity: 10,
-      packageSize: null, dailyUse: null, expiry: '', note: ''
+      packageSize: null, dailyUse: null, expiry: '', note: '', barcode: ''
     });
 
     expect(params).toMatchObject({ name: 'Svíčky', packageSize: '', dailyUse: '', expiry: '' });

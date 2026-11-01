@@ -15,6 +15,12 @@ GitHub, jen pro e-maily z allowlistu.
   datum předvyplní typickou trvanlivostí kategorie. Nainstalovaná aplikace
   ukazuje jejich počet na ikoně.
 - **Zásoby** podle místa (sklep, spíž, …), hledání, „−1“ při spotřebě.
+- **Čárové kódy.** 📷 Skenovat: neznámý kód doplní název, kategorii a
+  kcal nebo litry z [Open Food Facts](https://world.openfoodfacts.org)
+  (kosmetiku a drogerii z Open Beauty Facts); známý kód nabídne „+1“ nebo
+  novou šarži s jiným datem. Bez kamery jde číslo opsat. Na iPhonu běží
+  čtečka ZXing (WebAssembly) z adresy aplikace, na Androidu vestavěná.
+  Datum spotřeby kód neobsahuje, to se zadává ručně.
 - **Nákup.** Co dokoupit na cílový počet dní, co vyměnit, a kontrolní seznam
   základních věcí (baterka, rádio, vařič, lékárnička, hotovost…).
 - **Rodina.** Počet dospělých, dětí a batolat a cílový počet dní, sdílené pro

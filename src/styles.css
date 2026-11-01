@@ -319,6 +319,42 @@ h2 {
   gap: 0.5rem;
 }
 
+.field > .row {
+  font-weight: 400;
+}
+
+.field > .row button {
+  flex: none;
+}
+
+/* Barcode scanner */
+.scanner {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 0.5rem;
+  border-radius: 12px;
+  background: #000000;
+}
+
+.scanner video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scan-frame {
+  position: absolute;
+  inset: 30% 12%;
+  border: 3px solid rgb(255 255 255 / 85%);
+  border-radius: 10px;
+  box-shadow: 0 0 0 100vmax rgb(0 0 0 / 35%);
+}
+
+#scan-manual {
+  margin-bottom: 0.5rem;
+}
+
 .helper {
   margin: -0.25rem 0 0.75rem;
   font-size: 0.9rem;

@@ -20,6 +20,8 @@ import {
   type Diagnostics
 } from '@alcariss/pwa-kit';
 import { toHousehold, toHouseholdParams, toItem, toItemParams, type HouseholdInput, type ItemInput } from './model';
+import { lookupProduct, type ProductDraft } from './products';
+import { scanBarcode } from './scanner';
 import {
   DEFAULT_HOUSEHOLD,
   expiryStatus,
@@ -30,6 +32,7 @@ import {
 } from './supplies';
 import {
   TABS,
+  renderBarcodeMatch,
   renderHousehold,
   renderItemForm,
   renderNav,
@@ -38,6 +41,7 @@ import {
   renderShopping,
   renderStockList,
   renderStockShell,
+  type ItemDraft,
   type Tab
 } from './views';
 
@@ -114,6 +118,7 @@ function showShell(): void {
     <section id="debug" class="container"></section>
     <nav id="nav" class="tabs" aria-label="Sekce"></nav>
     <dialog id="item-dialog" aria-label="Zásoba"></dialog>
+    <dialog id="scan-dialog" aria-label="Čárový kód"></dialog>
     <div id="toast" class="toast" role="status" hidden></div>
     <div id="print-sheet" class="print-only"></div>
   `;
@@ -231,6 +236,12 @@ async function onAction(event: Event): Promise<void> {
     case 'add-item':
       openItemDialog(null);
       break;
+    case 'scan':
+      await scanToStock();
+      break;
+    case 'scan-into-form':
+      await scanIntoForm();
+      break;
     case 'edit-item':
       if (item) {
         openItemDialog(item);
@@ -302,9 +313,9 @@ function readText(form: HTMLFormElement, name: string): string {
   return (form.elements.namedItem(name) as HTMLInputElement | null)?.value ?? '';
 }
 
-function openItemDialog(item: Item | null): void {
+function openItemDialog(item: Item | null, draft: ItemDraft = {}): void {
   const dialog = requiredElement<HTMLDialogElement>('#item-dialog');
-  dialog.innerHTML = renderItemForm(item, knownLocations());
+  dialog.innerHTML = renderItemForm(item, knownLocations(), draft);
   const form = requiredElement<HTMLFormElement>('#item-form', dialog);
   const categorySelect = requiredElement<HTMLSelectElement>('#item-category', dialog);
   const expiry = form.elements.namedItem('expiry') as HTMLInputElement;
@@ -353,7 +364,8 @@ function openItemDialog(item: Item | null): void {
       packageSize: measuredByAmount ? readNumber(form, `packageSize-${category}`) : null,
       dailyUse: measuredByAmount ? null : readNumber(form, 'dailyUse'),
       expiry: expiry.value,
-      note: readText(form, 'note')
+      note: readText(form, 'note'),
+      barcode: readText(form, 'barcode')
     };
     const submit = requiredElement<HTMLButtonElement>('#item-submit', dialog);
     submit.disabled = true;
@@ -368,6 +380,93 @@ function openItemDialog(item: Item | null): void {
   });
 
   dialog.showModal();
+}
+
+function draftFromProduct(product: ProductDraft): ItemDraft {
+  return { barcode: product.barcode, name: product.name, category: product.category, packageSize: product.packageSize };
+}
+
+async function findProduct(code: string): Promise<ProductDraft | null> {
+  toast('Hledám produkt…');
+  const product = await lookupProduct(code);
+  toast(product?.name ? `Nalezeno: ${product.name}` : 'Produkt v databázi není – vyplňte ho ručně.');
+  return product;
+}
+
+/** Scan from the stock list: known code -> +1 or new batch; new code -> pre-filled form. */
+async function scanToStock(): Promise<void> {
+  const scanDialog = requiredElement<HTMLDialogElement>('#scan-dialog');
+  const code = await scanBarcode(scanDialog);
+  if (code === null) {
+    return;
+  }
+
+  const matches = state.items.filter((item) => item.barcode === code);
+  if (matches.length === 0) {
+    const product = await findProduct(code);
+    openItemDialog(null, product ? draftFromProduct(product) : { barcode: code });
+    return;
+  }
+
+  scanDialog.innerHTML = renderBarcodeMatch(code, matches, today());
+  scanDialog.showModal();
+  scanDialog.onclick = async (event) => {
+    const button = (event.target as Element).closest<HTMLButtonElement>('[data-match]');
+    const item = findItem(button?.dataset.id);
+    switch (button?.dataset.match) {
+      case 'plus-one':
+        if (item) {
+          scanDialog.close();
+          await saveItem(() => itemStore.update(item.id, { ...item, quantity: item.quantity + 1 }), `${item.name}: +1`);
+        }
+        break;
+      case 'new-batch':
+        if (item) {
+          scanDialog.close();
+          const { id: _id, expiry: _expiry, quantity: _quantity, ...copy } = item;
+          openItemDialog(null, copy);
+        }
+        break;
+      case 'close':
+        scanDialog.close();
+        break;
+    }
+  };
+  scanDialog.addEventListener('close', () => {
+    scanDialog.onclick = null;
+  }, { once: true });
+}
+
+/** Scan from inside the item form: fills what the user has not typed yet. */
+async function scanIntoForm(): Promise<void> {
+  const dialog = requiredElement<HTMLDialogElement>('#item-dialog');
+  const form = requiredElement<HTMLFormElement>('#item-form', dialog);
+  const code = await scanBarcode(requiredElement<HTMLDialogElement>('#scan-dialog'));
+  if (code === null || !dialog.open) {
+    return;
+  }
+
+  const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | null;
+  (field('barcode') as HTMLInputElement).value = code;
+  const line = requiredElement('#barcode-line', dialog);
+  line.textContent = `Čárový kód ${code}`;
+  line.hidden = false;
+
+  const product = await findProduct(code);
+  if (product === null) {
+    return;
+  }
+  const name = field('name') as HTMLInputElement;
+  if (name.value.trim() === '' && product.name) {
+    name.value = product.name;
+  }
+  const category = field('category') as HTMLSelectElement;
+  category.value = product.category;
+  category.dispatchEvent(new Event('change'));
+  const size = field(`packageSize-${product.category}`) as HTMLInputElement | null;
+  if (size && size.value === '' && product.packageSize !== null) {
+    size.value = String(product.packageSize);
+  }
 }
 
 function wireHouseholdForm(): void {
