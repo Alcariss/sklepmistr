@@ -54,14 +54,26 @@ describe('coverage', () => {
     expect(coverage(items, DEFAULT_HOUSEHOLD, TODAY).water.amount).toBe(12.5);
   });
 
-  it('reports food without calories as uncounted instead of guessing', () => {
-    const rice = item({ name: 'Rýže', category: 'food', quantity: 2, packageSize: 3500 });
-    const beans = item({ name: 'Fazole', category: 'food', quantity: 4 });
+  it('estimates calories from the name of food entered without them', () => {
+    const rice = item({ name: 'Rýže', category: 'food', quantity: 2, packageSize: 3000 });
+    const beans = item({ name: 'Fazole v plechovce', category: 'food', quantity: 4 });
 
     const food = coverage([rice, beans], DEFAULT_HOUSEHOLD, TODAY).food;
 
-    expect(food.amount).toBe(7000);
-    expect(food.uncounted).toEqual([beans]);
+    expect(food.amount).toBe(2 * 3000 + 4 * 360);
+    expect(food.estimated).toEqual([beans]);
+  });
+
+  it('prefers the calories typed in over the estimate', () => {
+    const rice = item({ name: 'Rýže', category: 'food', quantity: 1, packageSize: 1000 });
+
+    expect(coverage([rice], DEFAULT_HOUSEHOLD, TODAY).food).toMatchObject({ amount: 1000, estimated: [] });
+  });
+
+  it('reports food it cannot recognise as uncounted', () => {
+    const mystery = item({ name: 'Babiččina specialita', category: 'food', quantity: 4 });
+
+    expect(coverage([mystery], DEFAULT_HOUSEHOLD, TODAY).food).toMatchObject({ days: null, uncounted: [mystery] });
   });
 
   it('lasts as long as the item that runs out first', () => {

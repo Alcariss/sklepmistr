@@ -1,3 +1,6 @@
+import { estimateFoodKcal } from './estimate';
+import { normalizedWords } from './text';
+
 /**
  * Everything Sklepmistr knows about supplies, free of DOM and network so it
  * can be tested directly. Dates are local `YYYY-MM-DD` strings.
@@ -147,22 +150,45 @@ export type Coverage = {
   bottleneck: Item | null;
   /** Usable items that cannot be counted: no package size, or no daily use. */
   uncounted: Item[];
+  /** Food counted with calories guessed from its name. */
+  estimated: Item[];
 };
 
 function isUsable(item: Item, today: string): boolean {
   return item.quantity > 0 && expiryStatus(item.expiry, today) !== 'expired';
 }
 
+/** Litres per package for water, kcal per package for food; estimated from the name for food without one. */
+export function packageAmount(item: Item): { amount: number; estimated: boolean } | null {
+  if (item.packageSize !== null && item.packageSize > 0) {
+    return { amount: item.packageSize, estimated: false };
+  }
+  const estimate = item.category === 'food' ? estimateFoodKcal(item.name) : null;
+  return estimate === null ? null : { amount: estimate.kcal, estimated: true };
+}
+
 function amountCoverage(category: 'water' | 'food', items: Item[], perDay: number): Coverage {
-  const counted = items.filter((item) => item.packageSize !== null && item.packageSize > 0);
-  const amount = counted.reduce((total, item) => total + item.quantity * (item.packageSize ?? 0), 0);
+  let amount = 0;
+  const counted: Item[] = [];
+  const estimated: Item[] = [];
+  for (const item of items) {
+    const size = packageAmount(item);
+    if (size !== null) {
+      amount += item.quantity * size.amount;
+      counted.push(item);
+      if (size.estimated) {
+        estimated.push(item);
+      }
+    }
+  }
   return {
     category,
     days: counted.length === 0 || perDay === 0 ? null : amount / perDay,
     amount,
     perDay,
     bottleneck: null,
-    uncounted: items.filter((item) => !counted.includes(item))
+    uncounted: items.filter((item) => !counted.includes(item)),
+    estimated
   };
 }
 
@@ -184,7 +210,8 @@ function dailyUseCoverage(category: Category, items: Item[]): Coverage {
     amount: null,
     perDay: null,
     bottleneck,
-    uncounted: items.filter((item) => item.dailyUse === null || item.dailyUse <= 0)
+    uncounted: items.filter((item) => item.dailyUse === null || item.dailyUse <= 0),
+    estimated: []
   };
 }
 
@@ -272,14 +299,9 @@ export const ESSENTIALS: readonly { label: string; keywords: readonly string[] }
   { label: 'Kopie dokladů', keywords: ['doklad', 'kopie'] }
 ];
 
-/** Lower case without diacritics: "Čelovka" -> "celovka". */
-export function normalizeText(value: string): string {
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-}
-
 export function hasEssential(items: Item[], keywords: readonly string[]): boolean {
   return items.some((item) => {
-    const words = normalizeText(item.name).split(/[^a-z0-9]+/);
+    const words = normalizedWords(item.name);
     return keywords.some((keyword) => words.some((word) => word.startsWith(keyword)));
   });
 }

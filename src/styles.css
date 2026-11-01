@@ -502,3 +502,7 @@ dialog h2 {
     text-align: left;
   }
 }
+
+.estimate {
+  margin: -0.4rem 0 0.75rem;
+}

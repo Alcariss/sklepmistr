@@ -39,8 +39,11 @@ GitHub, jen pro e-maily z allowlistu.
 
 - **Voda.** Počet balení × litrů v balení, děleno potřebou rodiny.
 - **Jídlo.** Počet × kcal v balení (formulář umí spočítat z kcal/100 g a
-  hmotnosti), děleno potřebou rodiny. Jídlo bez kcal se nepočítá a přehled to
-  řekne.
+  hmotnosti), děleno potřebou rodiny. Bez vyplněných kcal se použije odhad
+  podle názvu (`src/estimate.ts`: rýže, těstoviny, fazole, konzervy, …,
+  s typickou velikostí balení, nebo s hmotností z názvu, např. „Rýže 2 kg“).
+  Odhad se neukládá a přehled ukazuje, kolik položek se počítá odhadem. Jídlo,
+  které tabulka nezná, se nepočítá a přehled to řekne.
 - **Ostatní kategorie.** U položky se vyplní denní spotřeba celé rodiny.
   Kategorie vydrží tak dlouho jako položka, která dojde první.
 

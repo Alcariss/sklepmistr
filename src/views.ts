@@ -1,4 +1,5 @@
 import { escapeHtml } from '@alcariss/pwa-kit';
+import { decimalFieldValue } from './text';
 import {
   CATEGORIES,
   CATEGORY_ICONS,
@@ -15,6 +16,7 @@ import {
   formatNumber,
   hasEssential,
   householdSize,
+  packageAmount,
   shoppingList,
   type Category,
   type Coverage,
@@ -57,7 +59,8 @@ function coverageDetail(cover: Coverage): string {
     const missing = cover.uncounted.length > 0
       ? ` · ${cover.uncounted.length} bez ${cover.category === 'water' ? 'objemu' : 'kcal'}`
       : '';
-    return `${formatNumber(cover.amount ?? 0)} ${unit} · potřeba ${formatNumber(cover.perDay ?? 0)} ${unit}/den${missing}`;
+    const estimated = cover.estimated.length > 0 ? ` · ${cover.estimated.length} odhadem` : '';
+    return `${formatNumber(cover.amount ?? 0)} ${unit} · potřeba ${formatNumber(cover.perDay ?? 0)} ${unit}/den${estimated}${missing}`;
   }
   if (cover.bottleneck) {
     return `Nejdřív dojde: ${escapeHtml(cover.bottleneck.name)}`;
@@ -119,8 +122,11 @@ function quantityText(item: Item): string {
   if (item.category === 'water' && item.packageSize) {
     return `${count} × ${formatNumber(item.packageSize)} l`;
   }
-  if (item.category === 'food' && item.packageSize) {
-    return `${count} ks · ${formatNumber(item.packageSize)} kcal/ks`;
+  if (item.category === 'food') {
+    const size = packageAmount(item);
+    if (size !== null) {
+      return `${count} ks · ${size.estimated ? '≈ ' : ''}${formatNumber(size.amount)} kcal/ks${size.estimated ? ' (odhad)' : ''}`;
+    }
   }
   const use = item.dailyUse ? ` · ${formatNumber(item.dailyUse)}/den` : '';
   return `${count} ks${use}`;
@@ -264,6 +270,7 @@ export type ItemDraft = Partial<Omit<Item, 'id'>>;
 export function renderItemForm(item: Item | null, locations: string[], draft: ItemDraft = {}): string {
   const source: ItemDraft = item ?? draft;
   const value = (key: keyof ItemDraft) => escapeHtml(source[key] ?? '');
+  const decimal = (key: 'quantity' | 'packageSize' | 'dailyUse') => decimalFieldValue(source[key]);
   const selected = source.category ?? 'food';
   return `
     <form id="item-form" method="dialog">
@@ -283,24 +290,25 @@ export function renderItemForm(item: Item | null, locations: string[], draft: It
         <input name="location" list="locations" maxlength="100" value="${value('location')}" placeholder="např. Sklep – regál 2" autocomplete="off" />
         <datalist id="locations">${locations.map((location) => `<option value="${escapeHtml(location)}"></option>`).join('')}</datalist></label>
       <label class="field"><span>Počet kusů / balení</span>
-        <input name="quantity" type="number" inputmode="decimal" min="0" step="any" required value="${value('quantity') || '1'}" /></label>
+        <input name="quantity" type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]*[,.]?[0-9]*" required value="${decimal('quantity') || '1'}" /></label>
       <div data-show="water">
         <label class="field"><span>Litrů v jednom balení</span>
-          <input name="packageSize-water" type="number" inputmode="decimal" min="0" step="any" value="${selected === 'water' ? value('packageSize') : ''}" placeholder="např. 1,5" /></label>
+          <input name="packageSize-water" type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]*[,.]?[0-9]*" value="${selected === 'water' ? decimal('packageSize') : ''}" placeholder="např. 1,5" /></label>
       </div>
       <div data-show="food">
         <label class="field"><span>kcal v jednom balení<small>najdete na obalu</small></span>
-          <input name="packageSize-food" type="number" inputmode="numeric" min="0" step="any" value="${selected === 'food' ? value('packageSize') : ''}" placeholder="např. 350" /></label>
+          <input name="packageSize-food" type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]*[,.]?[0-9]*" value="${selected === 'food' ? decimal('packageSize') : ''}" placeholder="např. 350" /></label>
+        <p id="kcal-estimate" class="muted small estimate" hidden></p>
         <details class="helper"><summary>Spočítat z kcal na 100 g</summary>
           <div class="row">
-            <label class="field"><span>kcal / 100 g</span><input id="kcal-per-100" type="number" inputmode="decimal" min="0" step="any" /></label>
-            <label class="field"><span>Hmotnost (g)</span><input id="grams" type="number" inputmode="decimal" min="0" step="any" /></label>
+            <label class="field"><span>kcal / 100 g</span><input id="kcal-per-100" type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]*[,.]?[0-9]*" /></label>
+            <label class="field"><span>Hmotnost (g)</span><input id="grams" type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]*[,.]?[0-9]*" /></label>
           </div>
         </details>
       </div>
       <div data-show="daily">
         <label class="field"><span>Spotřeba za den<small>kusů pro celou rodinu, např. 0,5</small></span>
-          <input name="dailyUse" type="number" inputmode="decimal" min="0" step="any" value="${value('dailyUse')}" /></label>
+          <input name="dailyUse" type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]*[,.]?[0-9]*" value="${decimal('dailyUse')}" /></label>
       </div>
       <label class="field"><span>Spotřebujte do<small id="expiry-hint"></small></span>
         <input name="expiry" type="date" value="${value('expiry')}" /></label>

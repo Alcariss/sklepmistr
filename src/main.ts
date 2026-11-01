@@ -20,11 +20,14 @@ import {
   type Diagnostics
 } from '@alcariss/pwa-kit';
 import { toHousehold, toHouseholdParams, toItem, toItemParams, type HouseholdInput, type ItemInput } from './model';
+import { estimateFoodKcal } from './estimate';
 import { lookupProduct, type ProductDraft } from './products';
 import { scanBarcode } from './scanner';
+import { decimalFieldValue, parseDecimal } from './text';
 import {
   DEFAULT_HOUSEHOLD,
   expiryStatus,
+  formatNumber,
   suggestExpiry,
   type Category,
   type Household,
@@ -302,11 +305,14 @@ function knownLocations(): string[] {
 
 function readNumber(form: HTMLFormElement, name: string): number | null {
   const field = form.elements.namedItem(name) as HTMLInputElement | null;
-  if (!field || field.value.trim() === '') {
-    return null;
-  }
-  const value = Number(field.value.replace(',', '.'));
-  return Number.isFinite(value) ? value : null;
+  return field ? parseDecimal(field.value) : null;
+}
+
+/** Visible decimal fields whose text is not a number, e.g. "1,5,2". */
+function invalidDecimalFields(form: HTMLFormElement): HTMLInputElement[] {
+  return [...form.querySelectorAll<HTMLInputElement>('input[inputmode="decimal"]')]
+    .filter((field) => field.name !== '' && field.closest('[hidden]') === null)
+    .filter((field) => field.value.trim() !== '' && parseDecimal(field.value) === null);
 }
 
 function readText(form: HTMLFormElement, name: string): string {
@@ -342,18 +348,41 @@ function openItemDialog(item: Item | null, draft: ItemDraft = {}): void {
   const kcalPer100 = requiredElement<HTMLInputElement>('#kcal-per-100', dialog);
   const grams = requiredElement<HTMLInputElement>('#grams', dialog);
   const foodSize = form.elements.namedItem('packageSize-food') as HTMLInputElement;
+  const nameField = form.elements.namedItem('name') as HTMLInputElement;
+  const estimateHint = requiredElement('#kcal-estimate', dialog);
+  // Food without its own kcal is counted from the name; say so, and with what.
+  const showEstimate = (): void => {
+    const estimate = foodSize.value.trim() === '' ? estimateFoodKcal(nameField.value) : null;
+    estimateHint.hidden = estimate === null;
+    estimateHint.textContent = estimate === null
+      ? ''
+      : `Nevyplníte-li, počítá se odhadem ≈ ${formatNumber(estimate.kcal)} kcal (${estimate.label}, ${formatNumber(estimate.grams)} g).`;
+  };
   const computeKcal = (): void => {
-    const per100 = Number(kcalPer100.value.replace(',', '.'));
-    const weight = Number(grams.value.replace(',', '.'));
+    const per100 = parseDecimal(kcalPer100.value) ?? 0;
+    const weight = parseDecimal(grams.value) ?? 0;
     if (per100 > 0 && weight > 0) {
       foodSize.value = String(Math.round((per100 * weight) / 100));
+      showEstimate();
     }
   };
   kcalPer100.addEventListener('input', computeKcal);
   grams.addEventListener('input', computeKcal);
+  nameField.addEventListener('input', showEstimate);
+  foodSize.addEventListener('input', showEstimate);
+  showEstimate();
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    const error = requiredElement('#item-error', dialog);
+    const invalid = invalidDecimalFields(form);
+    if (invalid.length > 0 || readNumber(form, 'quantity') === null) {
+      error.textContent = 'Čísla pište jako 1,5 nebo 2. Počet musí být vyplněný.';
+      error.hidden = false;
+      (invalid[0] ?? (form.elements.namedItem('quantity') as HTMLInputElement)).focus();
+      return;
+    }
+    error.hidden = true;
     const category = categorySelect.value as Category;
     const measuredByAmount = category === 'water' || category === 'food';
     const input: ItemInput = {
@@ -465,7 +494,8 @@ async function scanIntoForm(): Promise<void> {
   category.dispatchEvent(new Event('change'));
   const size = field(`packageSize-${product.category}`) as HTMLInputElement | null;
   if (size && size.value === '' && product.packageSize !== null) {
-    size.value = String(product.packageSize);
+    size.value = decimalFieldValue(product.packageSize);
+    size.dispatchEvent(new Event('input'));
   }
 }
 
